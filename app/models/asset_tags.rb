@@ -136,7 +136,63 @@ module AssetTags
     url = asset.thumbnail(size)
     %{<img src="#{url}" #{attributes unless attributes.empty?} />} rescue nil
   end
+
+
+desc %{
+    Renders backgound tag for the asset to the top banner.
+    Also you can put some description to grid5 of right side. [Default value : "217"] 
+    And you can set align. [Default value : "left"]
   
+    *Usage*:
+     <pre><code><r:assets:background id="1" height="108" align="right"><r:content part="Body" /></r:assets:background></code></pre>
+  }
+  tag 'assets:background' do |tag|
+    asset, options = asset_and_options(tag)
+    raise TagError, 'Asset is not an image' unless asset.image?
+    size = options['size'] ? options.delete('size') : 'original'
+    geometry = options['geometry'] ? options.delete('geometry') : nil
+    height = options['height'] ? options.delete('height') : '216'
+    align = options['align'] ? options.delete('align') : 'left'
+    text = tag.double? ? tag.expand : tag.render('body')
+    #This is very experimental and will generate new sizes on the fly
+    asset.generate_style(size, { :size => geometry }) if geometry
+    alt = " alt='#{asset.title}'" unless tag.attr['alt'] rescue nil
+    attributes = options.inject('') { |s, (k, v)| s << %{#{k.downcase}="#{v}" } }.strip
+    attributes << alt unless alt.nil?
+    url = asset.thumbnail(size)
+    %{<div style='background-repeat: no-repeat; background-color: #000; color: #eee; height: #{height}px; background-image: url("#{ActionController::Base.relative_url_root}#{url}")'><div class="grid7 first"></div><div class="grid5"><p align="#{align}">#{text}</p></div></div>} rescue nil
+  end
+  
+  desc %{
+    Renders a trail of pankuzu list to the current page. 
+ 	<pre><code>
+    	<li><a href="#">Home</a></li>        
+        <li><a href="#">Contact us</a></li>
+       	<li>Via Email</li>
+    </code></pre>
+       	
+    *Usage:*
+    <pre><code><r:pankuzu [nolinks="true"] /></code></pre>
+  }
+  tag 'pankuzu' do |tag|
+    page = tag.locals.page
+    breadcrumbs = [page.breadcrumb]
+    breadcrumbs[0]="<li>"+breadcrumbs[0]+"</li>"
+    nolinks = (tag.attr['nolinks'] == 'true')
+    page.ancestors.each do |ancestor|
+      tag.locals.page = ancestor
+      if nolinks
+        breadcrumbs.unshift tag.render('breadcrumb')
+      else
+        breadcrumbs.unshift %{<li><a href="#{tag.render('url')}">#{tag.render('breadcrumb')}</a></li>}
+      end
+    end
+    separator = tag.attr['separator'] || ''
+    breadcrumbs.join(separator)
+    
+  end
+  
+    
   desc %{
     Embeds a flash-movie in a cross-browser-compatible fashion using only HTML
     If no width and height attributes are given it will use the intrinsic
