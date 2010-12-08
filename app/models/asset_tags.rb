@@ -134,7 +134,7 @@ module AssetTags
     attributes = options.inject('') { |s, (k, v)| s << %{#{k.downcase}="#{v}" } }.strip
     attributes << alt unless alt.nil?
     url = asset.thumbnail(size)
-    %{<img src="#{url}" #{attributes unless attributes.empty?} />} rescue nil
+    %{<img src="#{ActionController::Base.relative_url_root}#{url}" #{attributes unless attributes.empty?} />} rescue nil
   end
 
 
